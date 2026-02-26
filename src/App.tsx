@@ -31,15 +31,31 @@ export default function App() {
   useEffect(() => {
     if (!supabase) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchUserRole(session.user.id);
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.warn("Session error, clearing auth:", error.message);
+        supabase.auth.signOut();
+        setSession(null);
+        setUserRole(null);
+      } else {
+        setSession(session);
+        if (session) fetchUserRole(session.user.id);
+      }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchUserRole(session.user.id);
-      else setUserRole(null);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
+      
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setSession(null);
+        setUserRole(null);
+        setActiveTab('overview');
+      } else if (session) {
+        setSession(session);
+        fetchUserRole(session.user.id);
+      }
     });
 
     // Fetch site settings
