@@ -36,25 +36,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onVisitWebsite }) => {
     const fetchData = async () => {
       if (!supabase) return;
       
-      const [settings, profiles] = await Promise.all([
-        supabase.from('site_settings').select('*').single(),
-        supabase.from('profiles').select('*')
-      ]);
+      try {
+        const [settings, profiles] = await Promise.all([
+          supabase.from('site_settings').select('*').single(),
+          supabase.from('profiles').select('*')
+        ]);
 
-      if (settings.data) {
-        setSiteSettings({
-          siteName: settings.data.site_name,
-          logoUrl: settings.data.logo_url || '',
-          bannerUrl: settings.data.banner_url || '',
-          themeColor: settings.data.theme_color || '#f27d26'
-        });
-      }
+        if (settings.data) {
+          setSiteSettings({
+            siteName: settings.data.site_name,
+            logoUrl: settings.data.logo_url || '',
+            bannerUrl: settings.data.banner_url || '',
+            themeColor: settings.data.theme_color || '#f27d26'
+          });
+        }
 
-      if (profiles.data) {
-        setUsers(profiles.data as Profile[]);
+        if (profiles.data) {
+          setUsers(profiles.data as Profile[]);
+        }
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     fetchData();

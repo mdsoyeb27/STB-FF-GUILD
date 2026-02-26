@@ -47,31 +47,47 @@ export const MemberList: React.FC = () => {
   const [newMember, setNewMember] = useState({ full_name: '', game_id: '', role: 'member' });
 
   const handleAddMember = async () => {
-    if (!supabase || !newMember.full_name || !newMember.game_id) return;
+    if (!supabase) {
+      alert('Supabase is not configured!');
+      return;
+    }
+    if (!newMember.full_name || !newMember.game_id) {
+      alert('সবগুলো ঘর পূরণ করুন!');
+      return;
+    }
+    
     try {
-      const { error } = await supabase.from('profiles').insert({
+      // 1. Insert the new member
+      const { data, error } = await supabase.from('profiles').insert({
         full_name: newMember.full_name,
         game_id: newMember.game_id,
         role: newMember.role,
         status: 'active'
-      });
-      if (error) throw error;
+      }).select();
+
+      if (error) {
+        console.error('Error adding member:', error);
+        throw error;
+      }
       
-      // Log
+      // 2. Log activity
       await supabase.from('activity_logs').insert({
         module: 'members',
         action: 'নতুন সদস্য যোগ',
-        details: { name: newMember.full_name }
+        details: { name: newMember.full_name, added_by: 'admin' }
       });
 
       alert('সদস্য সফলভাবে যোগ করা হয়েছে!');
       setShowAddModal(false);
       setNewMember({ full_name: '', game_id: '', role: 'member' });
-      // Refresh
-      const { data } = await supabase.from('profiles').select('*');
-      if (data) setMembers(data as Profile[]);
+      
+      // 3. Refresh list
+      const { data: updatedList } = await supabase.from('profiles').select('*');
+      if (updatedList) setMembers(updatedList as Profile[]);
+      
     } catch (err: any) {
-      alert('ত্রুটি: ' + err.message);
+      console.error('Full error object:', err);
+      alert('ত্রুটি: ' + (err.message || 'অজানা সমস্যা'));
     }
   };
 

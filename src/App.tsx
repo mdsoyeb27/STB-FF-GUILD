@@ -10,6 +10,8 @@ import { CommunicationHub } from './components/CommunicationHub';
 import { Accounts } from './components/Accounts';
 import { AdminPanel } from './components/AdminPanel';
 import { NoticeBoard } from './components/NoticeBoard';
+import { TournamentBrackets } from './components/TournamentBrackets';
+import { WeaponStats } from './components/WeaponStats';
 import { ActivityLog } from './components/ActivityLog';
 import { Auth } from './components/Auth';
 import { Menu, Bell, Search, User, ShieldCheck, History } from 'lucide-react';
@@ -76,12 +78,16 @@ export default function App() {
         return <SquadBuilder />;
       case 'slots':
         return <TournamentSlots />;
+      case 'brackets':
+        return <TournamentBrackets />;
       case 'accounts':
         return <Accounts />;
       case 'chat':
         return <CommunicationHub />;
       case 'stats':
         return <AIStatsAnalysis />;
+      case 'weapons':
+        return <WeaponStats />;
       case 'notice':
         return <NoticeBoard />;
       case 'history':
@@ -132,10 +138,10 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 min-h-screen flex flex-col h-screen overflow-y-auto relative">
+      <main className="flex-1 h-screen overflow-y-auto relative flex flex-col">
         {/* Header */}
         <header className={cn(
-          "h-20 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-30 px-6 flex items-center justify-between transition-colors",
+          "h-20 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-30 px-6 flex items-center justify-between transition-colors shrink-0",
           isAdmin && "border-b-[#f27d26]/10 bg-[#0d0e10]/80"
         )}>
           <div className="flex items-center gap-4">

@@ -17,7 +17,10 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
+    if (!supabase) {
+      setError('Supabase is not configured. Please set your API keys.');
+      return;
+    }
     
     setLoading(true);
     setError('');

@@ -4,6 +4,8 @@ import {
   Users, 
   ShieldCheck, 
   Trophy, 
+  Swords,
+  Zap,
   Wallet, 
   Bell, 
   MessageSquare, 
@@ -30,10 +32,12 @@ const menuItems = [
   { id: 'members', label: 'সদস্য ব্যবস্থাপনা', icon: Users },
   { id: 'squads', label: 'স্কোয়াড বিল্ডার', icon: ShieldCheck },
   { id: 'slots', label: 'টুর্নামেন্ট স্লট', icon: Trophy },
+  { id: 'brackets', label: 'ব্র্যাকেট ও রেজাল্ট', icon: Swords },
   { id: 'accounts', label: 'আর্থিক হিসাব', icon: Wallet },
   { id: 'notice', label: 'নোটিশ বোর্ড', icon: Bell },
   { id: 'chat', label: 'চ্যাট হাব', icon: MessageSquare },
   { id: 'stats', label: 'AI স্ট্যাটস', icon: BarChart3 },
+  { id: 'weapons', label: 'অস্ত্রের তথ্য', icon: Zap },
   { id: 'history', label: 'অ্যাক্টিভিটি লগ', icon: History },
 ];
 
