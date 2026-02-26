@@ -50,6 +50,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onVisitWebsite }) => {
           supabase.from('guild_rules').select('*').order('created_at', { ascending: true })
         ]);
 
+        if (settings.error && settings.error.code === '42P01') {
+          throw new Error('Database not set up. Please run the SQL script in Supabase.');
+        }
+
         if (settings.data) {
           setSiteSettings({
             siteName: settings.data.site_name,
@@ -64,8 +68,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onVisitWebsite }) => {
         if (eventsData.data) setEvents(eventsData.data);
         if (rulesData.data) setRules(rulesData.data);
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching admin data:', error);
+        if (error.message.includes('Database not set up') || error.code === '42P01') {
+          alert('সতর্কতা: ডাটাবেস সেটআপ করা হয়নি। দয়া করে Supabase SQL Editor-এ গিয়ে complete_schema.sql ফাইলটি রান করুন।');
+        }
       } finally {
         setLoading(false);
       }
