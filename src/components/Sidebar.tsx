@@ -25,6 +25,7 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
   onLogout?: () => void;
   mode?: 'mobile' | 'desktop';
+  siteName?: string;
 }
 
 const menuItems = [
@@ -42,7 +43,7 @@ const menuItems = [
   { id: 'history', label: 'অ্যাক্টিভিটি লগ', icon: History },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout, mode = 'desktop' }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout, mode = 'desktop', siteName = 'STB FF GUILD' }) => {
   if (mode === 'mobile') {
     return (
       <>
@@ -63,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
           <div className="p-6 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#f27d26] rounded-lg flex items-center justify-center font-bold text-xl">S</div>
-              <span className="font-bold text-lg tracking-tight">STB FF GUILD</span>
+              <span className="font-bold text-lg tracking-tight">{siteName}</span>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white">
               <X size={24} />

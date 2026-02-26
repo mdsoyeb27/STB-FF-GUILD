@@ -18,7 +18,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) {
-      setError('Supabase is not configured. Please set your API keys.');
+      setError('Supabase কনফিগার করা হয়নি। দয়া করে আপনার .env ফাইলে VITE_SUPABASE_URL এবং VITE_SUPABASE_ANON_KEY সেট করুন।');
       return;
     }
     

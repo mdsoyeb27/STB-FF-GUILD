@@ -26,6 +26,8 @@ export default function App() {
   const [session, setSession] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  const [siteName, setSiteName] = useState('STB FF GUILD');
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -38,6 +40,11 @@ export default function App() {
       setSession(session);
       if (session) fetchUserRole(session.user.id);
       else setUserRole(null);
+    });
+
+    // Fetch site settings
+    supabase.from('site_settings').select('site_name').single().then(({ data }) => {
+      if (data) setSiteName(data.site_name);
     });
 
     return () => subscription.unsubscribe();
@@ -119,6 +126,7 @@ export default function App() {
         setIsOpen={setIsSidebarOpen}
         onLogout={handleLogout}
         mode="mobile"
+        siteName={siteName}
       />
 
       {/* Desktop Sidebar Container */}
@@ -128,7 +136,7 @@ export default function App() {
       )}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-[#f27d26] rounded-lg flex items-center justify-center font-bold text-xl">S</div>
-          <span className="font-bold text-lg tracking-tight">STB FF GUILD</span>
+          <span className="font-bold text-lg tracking-tight">{siteName}</span>
         </div>
         
         <div className="flex-1 px-4 pb-4 overflow-hidden">
@@ -139,6 +147,7 @@ export default function App() {
             setIsOpen={setIsSidebarOpen}
             onLogout={handleLogout}
             mode="desktop"
+            siteName={siteName}
           />
         </div>
       </div>
