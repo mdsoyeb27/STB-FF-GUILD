@@ -8,19 +8,35 @@ export const MemberList: React.FC = () => {
   const [members, setMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [userRole, setUserRole] = useState<string>('member');
 
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchData = async () => {
       if (!supabase) return;
+      
+      // Fetch user role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (data) setUserRole(data.role);
+      }
+
+      // Fetch members
       const { data } = await supabase.from('profiles').select('*');
       if (data) setMembers(data as Profile[]);
       setLoading(false);
     };
-    fetchMembers();
+    fetchData();
   }, []);
 
   const toggleStatus = async (userId: string, currentStatus: string) => {
     if (!supabase) return;
+    // Only admins can ban/unban
+    if (!['super_admin', 'sub_admin'].includes(userRole)) {
+      alert('শুধুমাত্র এডমিনরা এই কাজটি করতে পারবে');
+      return;
+    }
+
     const newStatus = currentStatus === 'active' ? 'banned' : 'active';
     try {
       const { error } = await supabase
@@ -45,6 +61,7 @@ export const MemberList: React.FC = () => {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMember, setNewMember] = useState({ full_name: '', game_id: '', role: 'member' });
+  const [adding, setAdding] = useState(false);
 
   const handleAddMember = async () => {
     if (!supabase) {
@@ -56,8 +73,10 @@ export const MemberList: React.FC = () => {
       return;
     }
     
+    setAdding(true);
     try {
       // 1. Insert the new member
+      // Note: This relies on the RLS policy "Admins can insert any profile"
       const { data, error } = await supabase.from('profiles').insert({
         full_name: newMember.full_name,
         game_id: newMember.game_id,
@@ -71,10 +90,11 @@ export const MemberList: React.FC = () => {
       }
       
       // 2. Log activity
+      const { data: { user } } = await supabase.auth.getUser();
       await supabase.from('activity_logs').insert({
         module: 'members',
         action: 'নতুন সদস্য যোগ',
-        details: { name: newMember.full_name, added_by: 'admin' }
+        details: { name: newMember.full_name, added_by: user?.id || 'unknown' }
       });
 
       alert('সদস্য সফলভাবে যোগ করা হয়েছে!');
@@ -88,6 +108,8 @@ export const MemberList: React.FC = () => {
     } catch (err: any) {
       console.error('Full error object:', err);
       alert('ত্রুটি: ' + (err.message || 'অজানা সমস্যা'));
+    } finally {
+      setAdding(false);
     }
   };
 

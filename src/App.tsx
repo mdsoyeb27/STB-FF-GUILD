@@ -110,35 +110,40 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-[#f27d26]/30 flex overflow-hidden">
+    <div className="flex h-[100dvh] bg-[#0a0a0a] text-white overflow-hidden font-sans">
+      {/* Mobile Sidebar - Rendered at root level */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen}
+        onLogout={handleLogout}
+        mode="mobile"
+      />
+
+      {/* Desktop Sidebar Container */}
       <div className={cn(
-        "hidden lg:flex flex-col w-64 bg-[#151619] border-r border-white/5 h-screen sticky top-0 transition-all duration-300",
-        isAdmin && "border-r-[#f27d26]/20 bg-[#0d0e10]"
+        "hidden lg:flex flex-col w-64 bg-[#151619] border-r border-white/5 h-full sticky top-0 shrink-0",
+        isAdmin && "bg-[#0d0e10]"
       )}>
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg",
-              isAdmin ? "bg-[#f27d26] shadow-[#f27d26]/20" : "bg-white/5 border border-white/10"
-            )}>S</div>
-            <div>
-              <h1 className="font-bold text-lg tracking-tight">STB FF GUILD</h1>
-              <div className="text-[10px] text-[#f27d26] font-bold uppercase tracking-widest">
-                {isAdmin ? 'Admin Dashboard' : 'Member Portal'}
-              </div>
-            </div>
-          </div>
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#f27d26] rounded-lg flex items-center justify-center font-bold text-xl">S</div>
+          <span className="font-bold text-lg tracking-tight">STB FF GUILD</span>
+        </div>
+        
+        <div className="flex-1 px-4 pb-4 overflow-hidden">
           <Sidebar 
             activeTab={activeTab} 
             setActiveTab={setActiveTab} 
             isOpen={isSidebarOpen} 
-            setIsOpen={setIsSidebarOpen} 
+            setIsOpen={setIsSidebarOpen}
             onLogout={handleLogout}
+            mode="desktop"
           />
         </div>
       </div>
 
-      <main className="flex-1 h-screen overflow-y-auto relative flex flex-col">
+      <main className="flex-1 h-full overflow-y-auto relative flex flex-col">
         {/* Header */}
         <header className={cn(
           "h-20 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-30 px-6 flex items-center justify-between transition-colors shrink-0",
@@ -162,7 +167,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            {userRole ? (
+            {session ? (
               <>
                 {userRole === 'super_admin' && (
                   <button 

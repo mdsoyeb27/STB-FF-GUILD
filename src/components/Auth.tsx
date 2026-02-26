@@ -27,7 +27,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
 
     try {
       if (mode === 'register') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -37,8 +37,14 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
           }
         });
         if (signUpError) throw signUpError;
-        alert('রেজিস্ট্রেশন সফল! আপনার ইমেইল ভেরিফাই করুন (যদি প্রয়োজন হয়) অথবা লগইন করুন।');
-        setMode('login');
+        
+        if (data.session) {
+          // User is logged in immediately (email confirmation disabled)
+          onSuccess();
+        } else {
+          alert('রেজিস্ট্রেশন সফল! আপনার ইমেইল ভেরিফাই করুন (যদি প্রয়োজন হয়) অথবা লগইন করুন।');
+          setMode('login');
+        }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,

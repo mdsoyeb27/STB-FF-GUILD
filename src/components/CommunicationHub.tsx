@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MessageSquare, Globe, Shield, Send, User, Crown, Loader2 } from 'lucide-react';
+import { MessageSquare, Globe, Shield, Send, User, Crown, Loader2, ShieldAlert } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ChatMessage {
@@ -13,10 +13,23 @@ interface ChatMessage {
 }
 
 export const CommunicationHub: React.FC = () => {
-  const [activeChat, setActiveChat] = useState<'global' | 'squad'>('global');
+  const [activeChat, setActiveChat] = useState<'global' | 'squad' | 'rules'>('global');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('member');
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (data) setUserRole(data.role);
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -25,28 +38,35 @@ export const CommunicationHub: React.FC = () => {
       
       let query = supabase
         .from('messages')
-        .select('*, profiles(full_name, role)')
+        .select('*, sender:sender_id(full_name, role)')
         .order('created_at', { ascending: true });
 
       if (activeChat === 'squad') {
-        // In a real app, we would filter by the user's squad_id
-        // For now, we'll just show messages that have a squad_id
-        query = query.not('squad_id', 'is', null);
+        query = query.eq('channel', 'squad');
+      } else if (activeChat === 'rules') {
+        query = query.eq('channel', 'rules');
       } else {
-        query = query.is('squad_id', null);
+        query = query.eq('channel', 'global');
       }
 
-      const { data } = await query;
+      const { data, error } = await query;
       
       if (data) {
-        setMessages(data.map(m => ({
+        setMessages(data.map((m: any) => ({
           id: m.id,
-          sender_name: m.profiles?.full_name || 'Unknown',
+          sender_name: m.sender?.full_name || 'Unknown',
           content: m.content,
           created_at: m.created_at,
-          is_me: false,
-          role: m.profiles?.role || 'member'
+          is_me: false, // We'll update this in a second pass or just check sender_id
+          sender_id: m.sender_id,
+          role: m.sender?.role || 'member'
         })));
+
+        // Update is_me
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setMessages(prev => prev.map(m => ({ ...m, is_me: m.sender_id === user.id })));
+        }
       }
       setLoading(false);
     };
@@ -61,28 +81,56 @@ export const CommunicationHub: React.FC = () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('লগইন করুন');
 
+      // Check if user can post in rules
+      if (activeChat === 'rules' && !['super_admin', 'sub_admin'].includes(userRole)) {
+        alert('শুধুমাত্র এডমিনরা রুলস চ্যানেলে মেসেজ দিতে পারবে');
+        return;
+      }
+
+      let squadId = null;
+      if (activeChat === 'squad') {
+        const { data } = await supabase.from('profiles').select('squad_id').eq('id', userData.user.id).single();
+        squadId = data?.squad_id;
+        if (!squadId) {
+          alert('আপনি কোনো স্কোয়াডে নেই');
+          return;
+        }
+      }
+
       const { error } = await supabase.from('messages').insert({
         content: message,
         sender_id: userData.user.id,
-        squad_id: activeChat === 'squad' ? (await supabase.from('profiles').select('squad_id').eq('id', userData.user.id).single()).data?.squad_id : null
+        squad_id: squadId,
+        channel: activeChat
       });
 
       if (error) throw error;
       setMessage('');
-      // Refresh messages
-      const { data } = await supabase
-        .from('messages')
-        .select('*, profiles(full_name, role)')
-        .order('created_at', { ascending: true });
       
+      // Refresh messages (duplicate logic, could be refactored)
+      let query = supabase
+        .from('messages')
+        .select('*, sender:sender_id(full_name, role)')
+        .order('created_at', { ascending: true });
+
+      if (activeChat === 'squad') {
+        query = query.eq('channel', 'squad');
+      } else if (activeChat === 'rules') {
+        query = query.eq('channel', 'rules');
+      } else {
+        query = query.eq('channel', 'global');
+      }
+
+      const { data } = await query;
       if (data) {
-        setMessages(data.map(m => ({
+        setMessages(data.map((m: any) => ({
           id: m.id,
-          sender_name: m.profiles?.full_name || 'Unknown',
+          sender_name: m.sender?.full_name || 'Unknown',
           content: m.content,
           created_at: m.created_at,
           is_me: m.sender_id === userData.user.id,
-          role: m.profiles?.role || 'member'
+          sender_id: m.sender_id,
+          role: m.sender?.role || 'member'
         })));
       }
     } catch (err: any) {
@@ -114,7 +162,7 @@ export const CommunicationHub: React.FC = () => {
             )}
           >
             <Globe size={16} />
-            গ্লোবাল চ্যাট
+            গ্লোবাল
           </button>
           <button 
             onClick={() => setActiveChat('squad')}
@@ -124,7 +172,17 @@ export const CommunicationHub: React.FC = () => {
             )}
           >
             <Shield size={16} />
-            টিম চ্যাট (গোপন)
+            টিম
+          </button>
+          <button 
+            onClick={() => setActiveChat('rules')}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-bold font-bengali transition-all flex items-center gap-2",
+              activeChat === 'rules' ? "bg-yellow-500 text-black shadow-lg shadow-yellow-500/20" : "text-white/40 hover:text-white"
+            )}
+          >
+            <ShieldAlert size={16} />
+            রুলস
           </button>
         </div>
       </div>
@@ -132,15 +190,26 @@ export const CommunicationHub: React.FC = () => {
       <div className="glass-card flex-1 flex flex-col overflow-hidden">
         <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#f27d26]/20 rounded-full flex items-center justify-center text-[#f27d26]">
-              {activeChat === 'global' ? <Globe size={20} /> : <Shield size={20} />}
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center",
+              activeChat === 'global' ? "bg-[#f27d26]/20 text-[#f27d26]" :
+              activeChat === 'squad' ? "bg-red-500/20 text-red-500" :
+              "bg-yellow-500/20 text-yellow-500"
+            )}>
+              {activeChat === 'global' ? <Globe size={20} /> : 
+               activeChat === 'squad' ? <Shield size={20} /> :
+               <ShieldAlert size={20} />}
             </div>
             <div>
               <h3 className="font-bold font-bengali">
-                {activeChat === 'global' ? 'গ্লোবাল চ্যাট বক্স' : 'টিম চ্যাট বক্স (গোপন)'}
+                {activeChat === 'global' ? 'গ্লোবাল চ্যাট বক্স' : 
+                 activeChat === 'squad' ? 'টিম চ্যাট বক্স (গোপন)' :
+                 'গিল্ড রুলস ও নোটিশ'}
               </h3>
               <p className="text-[10px] text-white/40 font-bengali">
-                {activeChat === 'global' ? 'গিল্ডের সবাই এই মেসেজ দেখতে পাবে' : 'শুধুমাত্র আপনার স্কোয়াড মেম্বাররা দেখতে পাবে'}
+                {activeChat === 'global' ? 'গিল্ডের সবাই এই মেসেজ দেখতে পাবে' : 
+                 activeChat === 'squad' ? 'শুধুমাত্র আপনার স্কোয়াড মেম্বাররা দেখতে পাবে' :
+                 'শুধুমাত্র এডমিনরা এখানে মেসেজ দিতে পারবে'}
               </p>
             </div>
           </div>
